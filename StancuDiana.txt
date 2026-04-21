@@ -1,0 +1,47 @@
+The client is a large manufacturing company undergoing a digital transformation in Procurement. Their current supplier database is fragmented, containing duplicate, outdated and inconsistent entries.
+
+POC is to demonstrate how accurate entity resolution and structured data can enable better supplier visibility and support strategic decision-making.
+
+When I first opened the dataset, I realized that a "copy-paste" approach or a simple automated match wouldn't work. The data was quite messy; I encountered issues caused by multi-line text fields and embedded delimiters within quoted values. To ensure correct parsing, I used a controlled import approach that preserved data integrity and prevented row misalignment.
+
+Before performing entity resolution, I explored the dataset and observed that:
+- Each input company is associated with up to 5 candidate matches
+- A significant portion of entries are missing critical attributes such as websites/domains
+- Company names exhibit high variability (e.g. abbreviations like SRL, LTD, INC)
+- Some candidates share identical domains, suggesting possible duplicates
+- Inconsistencies between country and company identifiers were frequent
+
+Since I couldn't manually check all 591 inputs from the start, I built a weighted scoring system in Excel. I prioritized attributes based on their reliability:
+- Domain 
+- Name similarity
+- Country consistency
+- City 
+
+To determine the best match for each input, I implemented a weighted scoring system:
+Score =
+0.4 × domain_match +
+0.3 × name_similarity +
+0.2 × country_match +
+0.1 × unic_domain
+
+The Domain is treated as the strongest identifier due to its uniqueness. Name similarity is useful but prone to variation, while country and city act as vital validation layers to prevent matching companies with the same name but in different parts of the world.
+
+Not all matches are equally reliable. To address this, I introduced confidence levels and applied color-coding to provide immediate visual cues:
+- High confidence (Green, >0.8): Strong match 
+- Medium confidence (Yellow, 0.5–0.8): Likely match, but requires light validation.
+- Low confidence (Red, <0.5): Ambiguous or poor quality, not automatically matched.
+
+Beyond matching, I used conditional formatting to identify further issues:
+- Duplicate entities: Multiple records sharing the same domain suggested fragmented supplier records.
+- Trust Signals: Domain availability and uniqueness were used as indirect signals of data reliability. Companies with a unique domain were considered more trustworthy.
+- Integrity: I identified that missing key attributes or country inconsistencies significantly reduced the matching confidence.
+
+In cases where no candidate met a reasonable threshold, I chose not to force a match. Avoiding incorrect data is more critical than having a complete but wrong list.
+
+For cases where multiple candidates had near-identical scores (e.g. within a 0.1 range), I performed a manual audit, for example:
+
+- 3 Step IT Sweden AB: The candidates provided (Proact IT, We Dig It) were incorrect. I prioritized data integrity by not resolving this row, as a false match is more damaging to procurement analysis than a missing record.
+- A.T. Kearney Singapore: I encountered a case where 4 candidates for the Singapore branch had foreign domains (.dk, .cn, .de). I chose to flag this as Low Confidence because the specific local branch was missing.
+- AALBORG CITY: The candidates provided spanned completely different industries (Healthcare, Education, Sports). Knowing the client is a manufacturing firm, I categorized this as Unmatched to avoid a "False Positive" result.
+
+For candidates lacking a website domain, the model naturally produces a lower score, reflecting the inherent uncertainty. In these cases, I performed manual cross-checks of geographic data to ensure the best possible result. This hybrid approach—combining an automated scoring model with human judgment-provides the client with a clean, prioritized, and reliable supplier database.
